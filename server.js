@@ -87,25 +87,47 @@ app.get("/users", async function (req, res) {
 // });
 
 app.get("/signup", async function (req, res) {
-  res.sendFile(join(__dirname, "signUp.html"));
+  res.sendFile(join(__dirname, "public/signUp.html"));
 });
 
 app.post("/signup", async function (req, res) {
   try {
     const { username, password } = req.body;
+
+    let connection = await getDBConnnection();
+
+    // Check if the username already exists
+    let [existingUser] = await connection.execute(
+      "SELECT username FROM users WHERE username = ?",
+      [username]
+    );
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: "Username already taken" });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    let connection = await getDBConnnection();
     let sql = `INSERT INTO users (username, password)
                   VALUES (?, ?)`;
 
-    let [results] = await connection.execute(sql, [
-      username,
-      hashedPassword, // Use hashedPassword here, not req.body.password
-    ]);
+    let [results] = await connection.execute(sql, [username, hashedPassword]);
 
-    res.redirect("/blackjack");
+    sql = "SELECT id, username FROM users WHERE username ='" + username + "'";
+    let [justSignUp] = await connection.execute(sql, [username]);
+
+    let payload = {
+      sub: justSignUp[0].id, // sub är obligatorisk
+      name: justSignUp[0].username, // Valbar
+      // kan innehålla ytterligare attribut, t.ex. roller
+    };
+
+    let token = jwt.sign(
+      payload,
+      "jag är ledsen för att mina föräldrar inte älskar mig"
+    );
+    res.json(token);
   } catch (error) {
     res
       .status(500)
@@ -138,7 +160,7 @@ app.post("/login", async function (req, res) {
     if (match) {
       let payload = {
         sub: results[0].id, // sub är obligatorisk
-        name: results[0].first_name, // Valbar
+        name: results[0].username, // Valbar
         // kan innehålla ytterligare attribut, t.ex. roller
       };
       let token = jwt.sign(
@@ -185,8 +207,62 @@ app.post("/login", async function (req, res) {
 //   }
 // });
 
+app.post("/check", async function (req, res) {
+  token = localStorage.getItem("token");
+  let apa = jwt.decode(
+    token,
+    "jag är ledsen för att mina föräldrar inte älskar mig"
+  );
+
+  console.log(apa);
+});
+
 app.get("/blackjack", async function (req, res) {
   res.sendFile(join(__dirname, "blackJack.html"));
+});
+
+app.post("/blackjack", async function (req, res) {
+  try {
+    const { username, password } = req.body;
+
+    let connection = await getDBConnnection();
+
+    let selectsql =
+      "SELECT id, username, password FROM users WHERE username ='" +
+      username +
+      "'";
+    let [selectresults] = await connection.execute(selectsql, [
+      username,
+      password,
+    ]);
+
+    let updatesql = `INSERT INTO users (username, password)
+                  VALUES (?, ?)`;
+
+    let [updateresults] = await connection.execute(updatesql, [
+      username,
+      hashedPassword,
+    ]);
+
+    sql = "SELECT id, username FROM users WHERE username ='" + username + "'";
+    let [justSignUp] = await connection.execute(sql, [username]);
+
+    let payload = {
+      sub: justSignUp[0].id, // sub är obligatorisk
+      name: justSignUp[0].username, // Valbar
+      // kan innehålla ytterligare attribut, t.ex. roller
+    };
+
+    let token = jwt.sign(
+      payload,
+      "jag är ledsen för att mina föräldrar inte älskar mig"
+    );
+    res.json(token);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while processing your request." });
+  }
 });
 
 // app.put("/users/:id", async function (req, res) {

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlackJack</title>
+  </head>
+
+  <body>
+    <h1>Blackjack!</h1>
+    <button id="start_match">Start match</button>
+    <div>Dealer hand</div>
+    <p id="dealer_cards" class="small_text">Dealer cards:</p>
+    <p id="dealer_total" class="small_text">Cards total: ? +</p>
+    <div>Your hand</div>
+    <p id="your_cards" class="small_text">Your cards:</p>
+    <p id="your_total" class="small_text">Cards total:</p>
+    <button id="hit">Hit</button>
+    <button id="double">Double</button>
+    <button id="stay" class="">Stay</button>
+
+    <script>
+      const API_URL = "http://localhost:3000";
+      async function alal() {
+        let loginResponse = await fetch(API_URL + "/check", {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+        });
+      }
+
+      alal();
+
+      //   let sql =
+      //   "SELECT id, username FROM users WHERE username ='" +
+      //   username +
+      //   "'";
+      //   let [results] = await connection.execute(sql, [username, password]);
+
+      let cards = [
+        "2",
+        "2",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3",
+        "3",
+        "4",
+        "4",
+        "4",
+        "4",
+        "5",
+        "5",
+        "5",
+        "5",
+        "6",
+        "6",
+        "6",
+        "6",
+        "7",
+        "7",
+        "7",
+        "7",
+        "8",
+        "8",
+        "8",
+        "8",
+        "9",
+        "9",
+        "9",
+        "9",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "11",
+        "11",
+        "11",
+        "11",
+      ];
+
+      let dealer_total = 0;
+      let your_total = 0;
+      let dealer_cards = [];
+      let your_cards = [];
+      let ace = false;
+      let hidden_card = "";
+      let hidden_card_value = 0;
+      let dealer_bust = false;
+
+      async function win(bet) {
+        let roundResult = true;
+        let blackJackResponse = await fetch(API_URL + "/blackjack", {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+          body: JSON.stringify({ username, bet, roundResult }),
+        });
+      }
+
+      function draw(cards) {
+        const card_draw = Math.floor(Math.random() * cards.length);
+        const drawn_card = cards[card_draw];
+        cards.splice(card_draw, 1);
+        return Number(drawn_card);
+      }
+
+      function ace_check(array) {
+        for (let i = 0; i < array.length; i++) {
+          if (array[i] === 11) {
+            array[i] = 1;
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function resetGame() {
+        // Reset card deck
+        cards = [
+          "2",
+          "2",
+          "2",
+          "2",
+          "3",
+          "3",
+          "3",
+          "3",
+          "4",
+          "4",
+          "4",
+          "4",
+          "5",
+          "5",
+          "5",
+          "5",
+          "6",
+          "6",
+          "6",
+          "6",
+          "7",
+          "7",
+          "7",
+          "7",
+          "8",
+          "8",
+          "8",
+          "8",
+          "9",
+          "9",
+          "9",
+          "9",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "11",
+          "11",
+          "11",
+          "11",
+        ];
+
+        dealer_cards = [];
+        your_cards = [];
+        dealer_total = 0;
+        your_total = 0;
+        hidden_card = "";
+        hidden_card_value = 0;
+        dealer_bust = false;
+
+        document.getElementById("dealer_cards").innerHTML = "";
+        document.getElementById("dealer_total").innerHTML = "";
+        document.getElementById("your_cards").innerHTML = "";
+        document.getElementById("your_total").innerHTML = "";
+
+        console.log("Game reset. Ready for a new match.");
+      }
+
+      document
+        .getElementById("start_match")
+        .addEventListener("click", function () {
+          resetGame();
+          document.getElementById("start_match").style.display = "none";
+
+          let drawn_card = draw(cards);
+          dealer_cards.push(drawn_card);
+          dealer_total += drawn_card;
+
+          drawn_card = draw(cards);
+          your_cards.push(drawn_card);
+          your_total += drawn_card;
+
+          drawn_card = draw(cards);
+          hidden_card = drawn_card;
+          hidden_card_value = drawn_card;
+          dealer_cards.push(hidden_card);
+
+          drawn_card = draw(cards);
+          your_cards.push(drawn_card);
+          your_total += drawn_card;
+
+          console.log("Dealer's initial cards:", dealer_cards);
+          console.log("Your initial cards:", your_cards);
+          console.log("Dealer total (one card hidden):", dealer_total);
+          console.log("Your total:", your_total);
+          console.log("Remaining cards:", cards);
+
+          document.getElementById("dealer_cards").innerHTML =
+            "Dealer's cards: " + dealer_cards[0] + ", ?";
+          document.getElementById("dealer_total").innerHTML =
+            "Dealer total: " + dealer_total;
+          document.getElementById("your_cards").innerHTML =
+            "Your cards: " + your_cards.join(", ");
+          document.getElementById("your_total").innerHTML =
+            "Your total: " + your_total;
+        });
+
+      document.getElementById("hit").addEventListener("click", function () {
+        const drawn_card = draw(cards);
+        console.log("You drew a card:", drawn_card);
+
+        your_total += drawn_card;
+        your_cards.push(drawn_card);
+
+        console.log("Your new total:", your_total);
+        console.log("Remaining cards:", cards);
+
+        document.getElementById("your_cards").innerHTML = your_cards.join(", ");
+        document.getElementById("your_total").innerHTML =
+          "Your total: " + your_total;
+
+        if (your_total > 21) {
+          console.log(
+            "Your total before ace check:",
+            your_total,
+            "Your cards:",
+            your_cards
+          );
+          if (ace_check(your_cards)) {
+            your_total -= 10;
+            console.log("Ace adjusted. New total:", your_total);
+            document.getElementById("your_total").innerHTML =
+              "Your total: " + your_total;
+          } else {
+            console.log("Bust! Dealer wins!");
+            document.getElementById("dealer_cards").innerHTML =
+              "Dealer cards: " + dealer_cards.join(", ");
+            document.getElementById("dealer_total").innerHTML =
+              "Dealer total: " + (dealer_total + hidden_card_value);
+            document.getElementById("start_match").style.display = "block";
+          }
+        }
+      });
+
+      document.getElementById("stay").addEventListener("click", function () {
+        dealer_total += hidden_card_value;
+        console.log("Dealer reveals hidden card:", hidden_card);
+        console.log("Dealer's total with hidden card:", dealer_total);
+
+        while (dealer_total <= 16) {
+          const drawn_card = draw(cards);
+          console.log("Dealer draws a card:", drawn_card);
+
+          dealer_total += drawn_card;
+          dealer_cards.push(drawn_card);
+
+          console.log("Dealer's new total:", dealer_total);
+          console.log("Dealer's cards:", dealer_cards);
+          console.log("Remaining cards:", cards);
+
+          if (dealer_total > 21) {
+            console.log(
+              "Dealer's total before ace check:",
+              dealer_total,
+              "Dealer's cards:",
+              dealer_cards
+            );
+            if (ace_check(dealer_cards)) {
+              dealer_total -= 10;
+              console.log("Ace adjusted for dealer. New total:", dealer_total);
+            } else {
+              console.log("Dealer busts! You win!");
+              document.getElementById("start_match").style.display = "block";
+            }
+          }
+        }
+
+        document.getElementById("dealer_cards").innerHTML =
+          "Dealer cards: " + dealer_cards.join(", ");
+        document.getElementById("dealer_total").innerHTML =
+          "Dealer total: " + dealer_total;
+
+        if (dealer_total <= 21) {
+          if (dealer_total > your_total) {
+            console.log("Dealer wins with total:", dealer_total);
+            document.getElementById("start_match").style.display = "block";
+          } else if (dealer_total < your_total) {
+            console.log("You win with total:", your_total);
+            document.getElementById("start_match").style.display = "block";
+          } else {
+            console.log("It's a draw!");
+            document.getElementById("start_match").style.display = "block";
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
